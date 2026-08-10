@@ -6,6 +6,9 @@ from items import Item
 CATEGORY = "Bit-String Flicking"
  
 
+# Precedence for infix rendering: higher binds tighter.
+# TODO: verify this table against the official ACSL Bit-String Flicking
+# reference before trusting rendered groupings.
 PREC = {"OR": 1, "XOR": 2, "AND": 3}
  
 BINARY_OPS = list(PREC)
@@ -170,6 +173,14 @@ def generate(rng=None, length=8, ops=3, n_vars=2, use_shifts=True, seed=None):
         env = {v: "".join(rng.choice("01") for _ in range(length)) for v in var_names}
         tree = build_tree(rng, var_names, ops, use_shifts)
         answer = evaluate(tree, env)
+
+        # Reject degenerate items: a (B OR B)-style node adds nothing, and an
+        # all-zeros / all-ones answer makes distractors collide and hands the
+        # student a free elimination.
+        if any(isinstance(n, Bin) and n.left == n.right for n in all_nodes(tree)):
+            continue
+        if len(set(answer)) == 1:
+            continue
  
         # Collect distractors: break one node, re-evaluate the whole tree.
         seen, distractors = {answer}, []
@@ -189,7 +200,9 @@ def generate(rng=None, length=8, ops=3, n_vars=2, use_shifts=True, seed=None):
         if len(distractors) < 3:            # this expression can't support four
             continue                        # distinct choices — start over
  
-        given = ", ".join(f"{v} = {env[v]}" for v in var_names)
+        # List only the variables the expression actually uses.
+        used = sorted({n.name for n in all_nodes(tree) if isinstance(n, Var)})
+        given = ", ".join(f"{v} = {env[v]}" for v in used)
         return Item(
             category=CATEGORY,
             stem=f"If {given}, evaluate:\n\n{render(tree)}",
@@ -203,25 +216,11 @@ def generate(rng=None, length=8, ops=3, n_vars=2, use_shifts=True, seed=None):
  
  
 
-def _self_test():
-    rng = random.Random(0)
-    for _ in range(500):
-        s = "".join(rng.choice("01") for _ in range(rng.randint(4, 12)))
-        n = rng.randint(0, 5)
-        env, A = {"A": s}, Var("A")
-        # every operation preserves length
-        for op in SHIFT_OPS:
-            assert len(evaluate(Un(op, A, n), env)) == len(s), op
-        # circulating n left then n right is the identity
-        back = evaluate(Un("RCIRC", Un("LCIRC", A, n), n), env)
-        assert back == s, (s, n, back)
-        # NOT twice is the identity
-        assert evaluate(Un("NOT", Un("NOT", A)), env) == s
-    print("invariants hold")
+# The evaluate() invariants formerly self-tested here now live in
+# tests/test_generators.py.
  
  
 if __name__ == "__main__":
-    _self_test()
     rng = random.Random(42)
     for _ in range(3):
         item = generate(rng, length=8, ops=3)

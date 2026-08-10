@@ -1,15 +1,18 @@
 """ACSL practice trainer.  Run with:  streamlit run app.py"""
 import inspect
+import io
 import json
 import random
 import sqlite3
 import time
 import uuid
+import zipfile
 from pathlib import Path
 
 import streamlit as st
 
 from generators import REGISTRY
+from render.latex import render_worksheet_set, worksheet_items
 
 DB_PATH = Path("data") / "responses.db"
 
@@ -90,7 +93,7 @@ generator = REGISTRY[category]
 if "item" not in st.session_state:           
     new_item(generator, settings)
 
-quiz, stats = st.tabs(["Quiz", "Session stats"])
+quiz, stats, sheets = st.tabs(["Quiz", "Session stats", "Worksheets"])
 
 with quiz:
     item = st.session_state.item
@@ -123,3 +126,40 @@ with stats:
         st.subheader("Most frequent mistakes this session")
         for tag, n in rows:
             st.write(f"**{n}×** — {tag}")
+
+with sheets:
+    c1, c2 = st.columns(2)
+    ws_cat = c1.selectbox("Category", list(REGISTRY), key="ws_cat")
+    ws_title = c2.text_input("Worksheet title", "ACSL Practice", key="ws_title")
+    ws_n = c1.number_input("Problems per worksheet", 1, 20, 5, key="ws_n")
+    ws_v = c2.number_input("Versions", 1, 40, 1, key="ws_v")
+    ws_seed = c1.number_input("Master seed", value=1, step=1, key="ws_seed")
+    ws_mc = c2.toggle("Multiple choice (off = free response)", True, key="ws_mc")
+    st.caption("Difficulty comes from the sidebar sliders. Same seed and "
+               "settings always regenerate the identical worksheets.")
+
+    versions = render_worksheet_set(ws_cat, int(ws_n), int(ws_v), settings,
+                                    int(ws_seed), title=ws_title,
+                                    show_choices=ws_mc)
+
+    with st.expander("Preview — version 1 stems"):
+        for i, it in enumerate(
+                worksheet_items(ws_cat, int(ws_n), 1, settings, int(ws_seed))[0], 1):
+            st.text(f"{i}. {it.stem}\n")
+
+    if len(versions) == 1:
+        _, ws_tex, key_tex = versions[0]
+        d1, d2 = st.columns(2)
+        d1.download_button("Download worksheet.tex", ws_tex, "worksheet.tex",
+                           mime="text/x-tex", key="ws_dl")
+        d2.download_button("Download key.tex", key_tex, "key.tex",
+                           mime="text/x-tex", key="key_dl")
+    else:
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            for v, (_, ws_tex, key_tex) in enumerate(versions, 1):
+                zf.writestr(f"worksheet_v{v}.tex", ws_tex)
+                zf.writestr(f"key_v{v}.tex", key_tex)
+        st.download_button(f"Download {len(versions)} worksheets + keys (.zip)",
+                           buf.getvalue(), "worksheets.zip",
+                           mime="application/zip", key="zip_dl")
