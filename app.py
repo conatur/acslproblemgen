@@ -7,6 +7,7 @@ import sqlite3
 import time
 import uuid
 import zipfile
+from collections import defaultdict
 from pathlib import Path
 
 import streamlit as st
@@ -42,11 +43,24 @@ def log_response(session_id, item, error_tag, correct, seconds):
 
 def top_errors(session_id):
     with sqlite3.connect(DB_PATH) as conn:
-        return conn.execute(
-            """SELECT error_tag, COUNT(*) AS n FROM responses
+        rows = conn.execute(
+            """SELECT category, error_tag, COUNT(*) AS n FROM responses
                WHERE session_id = ? AND correct = 0 AND error_tag IS NOT NULL
-               GROUP BY error_tag ORDER BY n DESC""",
+               GROUP BY category, error_tag ORDER BY category, n DESC""",
             (session_id,)).fetchall()
+    by_category = defaultdict(list)
+    for category, tag, n in rows:
+        by_category[category].append((tag, n))
+    return by_category
+
+
+def category_scores(session_id):
+    """{category: (right, attempted)} for this session, category order fixed."""
+    with sqlite3.connect(DB_PATH) as conn:
+        return {cat: (right, total) for cat, right, total in conn.execute(
+            """SELECT category, SUM(correct), COUNT(*) FROM responses
+               WHERE session_id = ? GROUP BY category ORDER BY category""",
+            (session_id,))}
 
 
 def new_item(generator, settings):
@@ -58,6 +72,14 @@ def new_item(generator, settings):
     st.session_state.choices = item.choices(random.Random())
     st.session_state.picked = None           
     st.session_state.shown_at = time.time()  
+
+
+def start_session():
+    """Fresh session id, so stats and score start from zero.  Past rows stay
+    in the DB under their own session_id."""
+    st.session_state.session_id = uuid.uuid4().hex
+    st.session_state.score = [0, 0]
+    st.session_state.pop("item", None)       # forces a new question on rerun
 
 
 def record_answer(choice):
@@ -77,8 +99,7 @@ st.set_page_config(page_title="ACSL Trainer", page_icon="🎯")
 init_db()
 
 if "session_id" not in st.session_state:
-    st.session_state.session_id = uuid.uuid4().hex
-    st.session_state.score = [0, 0]         
+    start_session()
 
 with st.sidebar:
     category = st.selectbox("Category", list(REGISTRY))
@@ -87,6 +108,10 @@ with st.sidebar:
         "length": st.slider("Bit-string length", 4, 16, 8),
         "ops": st.slider("Operations", 1, 6, 3),
     }
+    st.divider()
+    st.button("Start new session", on_click=start_session,
+              use_container_width=True,
+              help="Resets the score and the mistake breakdown.")
 
 generator = REGISTRY[category]
 
@@ -119,13 +144,19 @@ with quiz:
     st.metric("Score", f"{right} / {total}")
 
 with stats:
-    rows = top_errors(st.session_state.session_id)
-    if not rows:
-        st.write("No wrong answers this session — nothing to show yet.")
+    scores = category_scores(st.session_state.session_id)
+    if not scores:
+        st.write("Nothing answered this session yet.")
     else:
-        st.subheader("Most frequent mistakes this session")
-        for tag, n in rows:
-            st.write(f"**{n}×** — {tag}")
+        errors = top_errors(st.session_state.session_id)
+        st.subheader("Mistakes by category")
+        for cat, (right, total) in scores.items():
+            st.markdown(f"**{cat}** — {right} / {total} correct")
+            if errors[cat]:
+                for tag, n in errors[cat]:
+                    st.write(f"- **{n}×** — {tag}")
+            else:
+                st.caption("No mistakes in this category.")
 
 with sheets:
     c1, c2 = st.columns(2)
