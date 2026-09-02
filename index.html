@@ -1,0 +1,1782 @@
+<title>ACSL Shorts Trainer</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+
+<style>
+  :root {
+    --bg:     #F7F5EF;
+    --ink:    #1C1B19;
+    --accent: #B33A32;
+    --good:   #3F6B4A;
+    --muted:  #6B6862;
+    --rule:   #DDD9CE;
+
+    --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+    --font-body:    "IBM Plex Sans", Helvetica, Arial, sans-serif;
+    --font-mono:    "IBM Plex Mono", Menlo, Consolas, monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 720px; margin: 0 auto; padding: 0 32px; }
+
+  h1, h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  h1 { font-size: 34px; line-height: 1.1; letter-spacing: -0.012em; }
+  h2 { font-size: 22px; line-height: 1.2; }
+
+  p { margin: 0; }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 0; }
+
+  [hidden] { display: none !important; }
+
+  /* --- Top of page: title, info, page nav --- */
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 40px 0 18px;
+  }
+
+  .info-btn {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--rule);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .info-btn:hover, .info-btn[aria-expanded="true"] { color: var(--ink); border-color: var(--muted); }
+
+  .info-panel {
+    border-left: 2px solid var(--accent);
+    padding: 2px 0 2px 20px;
+    margin: 0 0 22px;
+    max-width: 62ch;
+  }
+
+  .tabs { display: flex; flex-wrap: wrap; gap: 26px; padding: 0 0 16px; }
+
+  .tab {
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 0 0 7px;
+    cursor: pointer;
+  }
+
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+  .panel { display: flex; flex-direction: column; gap: 26px; padding: 34px 0 90px; }
+
+  /* --- Controls --- */
+
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: 0;
+    padding: 8px 18px;
+    cursor: pointer;
+  }
+
+  .btn:hover:not(:disabled) { color: #8F2E27; border-color: #8F2E27; }
+  .btn:disabled { color: var(--muted); border-color: var(--rule); cursor: default; }
+
+  .btn-quiet { color: var(--ink); border-color: var(--rule); }
+  .btn-quiet:hover:not(:disabled) { color: var(--ink); border-color: var(--muted); }
+
+  /* Check turns into Next problem: label swaps at the midpoint of the fade. */
+  .btn-swap { transition: opacity 130ms ease, border-color 130ms ease, color 130ms ease; }
+  .btn-swap.swapping { opacity: 0; }
+
+  select, input[type="text"], input[type="number"] {
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: 0;
+    padding: 8px 10px;
+  }
+
+  select:hover, input:hover { border-color: var(--muted); }
+  input[type="text"] { width: 100%; }
+  #w-seed { width: 11ch; }
+
+  .seed-row { display: flex; align-items: stretch; gap: 8px; }
+
+  .icon-btn {
+    flex: none;
+    width: 34px;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 0;
+    cursor: pointer;
+  }
+
+  .icon-btn:hover { color: var(--ink); border-color: var(--muted); }
+
+  label { font-family: var(--font-mono); font-size: 0.82em; color: var(--muted); }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 18px 26px; }
+
+  /* --- Problem --- */
+
+  .stem-box {
+    border-left: 2px solid var(--accent);
+    padding-left: 20px;
+    overflow-x: auto;
+  }
+
+  .stem {
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+    white-space: pre-wrap;
+    line-height: 1.55;
+  }
+
+  .stem-expr { display: block; margin-top: 12px; font-weight: 600; }
+
+  /* --- Choices --- */
+
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+
+  .choice {
+    display: grid;
+    grid-template-columns: 2.5ch 1fr;
+    gap: 1.5ch;
+    align-items: baseline;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 0;
+    padding: 11px 14px;
+    cursor: pointer;
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+
+  .choice:hover:not(:disabled) { border-color: var(--muted); }
+  .choice[aria-pressed="true"] { border-color: var(--ink); }
+  .choice:disabled { cursor: default; }
+
+  .choice-letter { color: var(--muted); }
+  .choice[aria-pressed="true"] .choice-letter { color: var(--ink); }
+
+  .choice.is-right {
+    border-color: var(--good);
+    background: rgba(63, 107, 74, 0.07);
+    animation: pop 320ms ease-out;
+  }
+
+  .choice.is-right .choice-letter,
+  .choice.is-right .choice-value { color: var(--good); font-weight: 600; }
+
+  .choice.is-wrong {
+    border-color: var(--accent);
+    background: rgba(179, 58, 50, 0.05);
+  }
+
+  .choice.is-wrong .choice-letter, .choice.is-wrong .choice-value { color: var(--accent); }
+
+  @keyframes pop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.014); }
+    100% { transform: scale(1); }
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-top: 6px;
+  }
+
+  .verdict { font-family: var(--font-mono); font-size: 0.95em; }
+  .verdict-right { color: var(--good); }
+  .verdict-wrong { color: var(--accent); }
+
+  .working {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    border-top: 1px solid var(--rule);
+    padding-top: 18px;
+    overflow-x: auto;
+  }
+
+  .working-line { font-family: var(--font-mono); font-size: 0.95em; white-space: nowrap; }
+  .working-head { font-family: var(--font-mono); font-size: 0.82em; color: var(--muted); }
+
+  .score { font-family: var(--font-mono); font-size: 0.82em; color: var(--muted); }
+
+  /* --- Worksheets --- */
+
+  .group { display: flex; flex-direction: column; gap: 14px; }
+
+  .group-head {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 8px;
+  }
+
+  .checks { display: flex; flex-direction: column; gap: 9px; }
+
+  .check {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+  }
+
+  .check input { accent-color: var(--accent); }
+
+  .row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    border-top: 1px solid var(--rule);
+    padding-top: 22px;
+  }
+
+  .note { font-family: var(--font-mono); font-size: 0.82em; color: var(--muted); }
+
+  /* --- Session --- */
+
+  .cat-block { display: flex; flex-direction: column; gap: 8px; }
+
+  .cat-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+    font-weight: 600;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 7px;
+  }
+
+  .cat-tally { font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .miss {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 3px 18px;
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    padding: 3px 0;
+  }
+
+  .miss-tag { color: var(--accent); }
+  .miss-right { color: var(--muted); }
+
+  a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  a:hover { color: #8F2E27; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .choice, .btn-swap { transition: none; }
+    .choice.is-right { animation: none; }
+  }
+
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    h1 { font-size: 28px; }
+    .page { padding: 0 20px; }
+  }
+</style>
+
+<main class="page">
+
+  <div class="topbar">
+    <h1>ACSL Shorts Trainer</h1>
+    <button type="button" class="info-btn" id="info-btn" aria-expanded="false" aria-controls="info-panel" aria-label="About this page">i</button>
+  </div>
+
+  <div class="info-panel" id="info-panel" hidden>
+    <p>This page lets you quickly create ACSL problems for the MCQ section. Currently the three categories supported are Prefix / Infix / Postfix Notation, Computer Number Systems and Bit-String Flicking. You can also generate worksheets under the worksheets tab and print out the PDFs. Hope this helps :)</p>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" id="tab-practice" role="tab" aria-selected="true" aria-controls="panel-practice">Practice</button>
+    <button type="button" class="tab" id="tab-sheets" role="tab" aria-selected="false" aria-controls="panel-sheets">Worksheets</button>
+    <button type="button" class="tab" id="tab-session" role="tab" aria-selected="false" aria-controls="panel-session">Session</button>
+  </div>
+
+  <hr>
+
+  <section class="panel" id="panel-practice" role="tabpanel" aria-labelledby="tab-practice">
+
+    <div class="controls">
+      <div class="field">
+        <label for="p-category">category</label>
+        <select id="p-category">
+          <option value="notation">Prefix / Infix / Postfix Notation</option>
+          <option value="numbers">Computer Number Systems</option>
+          <option value="bits">Bit-String Flicking</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="p-difficulty">difficulty</label>
+        <select id="p-difficulty">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="stem-box">
+      <div class="stem" id="p-stem"></div>
+    </div>
+
+    <div class="choices" id="p-choices"></div>
+
+    <div class="actions">
+      <button type="button" class="btn btn-swap" id="p-primary">Check</button>
+      <button type="button" class="btn btn-quiet" id="p-skip">Skip</button>
+    </div>
+
+    <div id="p-result" hidden>
+      <p class="verdict" id="p-verdict"></p>
+      <div class="working" id="p-working"></div>
+    </div>
+
+    <p class="score" id="p-score">0 / 0</p>
+  </section>
+
+  <section class="panel" id="panel-sheets" role="tabpanel" aria-labelledby="tab-sheets" hidden>
+
+    <div class="group">
+      <p class="group-head">set</p>
+      <div class="controls">
+        <div class="field">
+          <label for="w-students">students</label>
+          <input type="number" id="w-students" min="1" max="40" value="12">
+        </div>
+        <div class="field">
+          <label for="w-problems">problems each</label>
+          <input type="number" id="w-problems" min="1" max="20" value="6">
+        </div>
+        <div class="field">
+          <label for="w-difficulty">difficulty</label>
+          <select id="w-difficulty">
+            <option value="1">1</option>
+            <option value="2" selected>2</option>
+            <option value="3">3</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="w-seed">seed</label>
+          <div class="seed-row">
+            <input type="number" id="w-seed" min="1" max="999999" placeholder="auto">
+            <button type="button" class="icon-btn" id="w-reseed" aria-label="Randomize seed" title="Randomize seed">&#8635;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="group-head">categories</p>
+      <div class="checks">
+        <label class="check"><input type="checkbox" value="notation" checked> Prefix / Infix / Postfix Notation</label>
+        <label class="check"><input type="checkbox" value="numbers" checked> Computer Number Systems</label>
+        <label class="check"><input type="checkbox" value="bits" checked> Bit-String Flicking</label>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="group-head">title</p>
+      <div class="field">
+        <input type="text" id="w-title" value="ACSL Practice" autocomplete="off" aria-label="worksheet title">
+      </div>
+    </div>
+
+    <div class="row-actions">
+      <button type="button" class="btn" id="w-download">Download PDF</button>
+      <button type="button" class="btn btn-quiet" id="w-preview">Preview</button>
+    </div>
+
+    <p class="note" id="w-note"></p>
+
+    <div class="working" id="w-previewbox" hidden></div>
+  </section>
+
+  <section class="panel" id="panel-session" role="tabpanel" aria-labelledby="tab-session" hidden>
+    <div id="s-body"></div>
+    <div class="row-actions">
+      <button type="button" class="btn btn-quiet" id="s-new">New session</button>
+    </div>
+    <p class="note" id="s-note"></p>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ============================================================
+     Seeded RNG — mulberry32. Every problem is a pure function of
+     its seed, so a worksheet regenerates identically.
+     ============================================================ */
+
+  function mulberry32(a) {
+    return function () {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function rngFrom(seed) {
+    const f = mulberry32(seed >>> 0);
+    const r = {
+      float: f,
+      int: (lo, hi) => lo + Math.floor(f() * (hi - lo + 1)),
+      pick: (arr) => arr[Math.floor(f() * arr.length)],
+      shuffle: (arr) => {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(f() * (i + 1));
+          const t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+        return a;
+      }
+    };
+    r.sample = (arr, k) => r.shuffle(arr).slice(0, k);
+    return r;
+  }
+
+  function hashString(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  /* ============================================================
+     Bit-String Flicking
+     ============================================================ */
+
+  const BS_PREC = { OR: 1, XOR: 2, AND: 3 };
+  const BS_BIN = ["AND", "OR", "XOR"];
+  const BS_SHIFT = ["LSHIFT", "RSHIFT", "LCIRC", "RCIRC"];
+
+  function bsRender(n, parentPrec) {
+    parentPrec = parentPrec || 0;
+    if (n.t === "var") return n.name;
+    if (n.t === "un") {
+      const inner = bsRender(n.child, 99);
+      if (n.op === "ID") return inner;
+      if (n.op === "NOT") return "NOT " + inner;
+      return n.op + "-" + n.n + " " + inner;
+    }
+    const prec = BS_PREC[n.op];
+    const text = bsRender(n.left, prec) + " " + n.op + " " + bsRender(n.right, prec);
+    return prec < parentPrec ? "(" + text + ")" : text;
+  }
+
+  function bsEval(n, env, steps) {
+    if (n.t === "var") return env[n.name];
+
+    if (n.t === "un") {
+      const s = bsEval(n.child, env, steps);
+      const L = s.length;
+      let out;
+      if (n.op === "ID") return s;
+      if (n.op === "NOT") {
+        out = s.split("").map((c) => (c === "0" ? "1" : "0")).join("");
+      } else {
+        const k = (n.op === "LCIRC" || n.op === "RCIRC") ? n.n % L : Math.min(n.n, L);
+        if (n.op === "LSHIFT") out = s.slice(k) + "0".repeat(k);
+        else if (n.op === "RSHIFT") out = "0".repeat(k) + s.slice(0, L - k);
+        else if (n.op === "LCIRC") out = s.slice(k) + s.slice(0, k);
+        else out = s.slice(L - k) + s.slice(0, L - k);
+      }
+      if (steps) steps.push([bsRender(n), out]);
+      return out;
+    }
+
+    const a = bsEval(n.left, env, steps);
+    const b = bsEval(n.right, env, steps);
+    let out = "";
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i], y = b[i];
+      if (n.op === "AND") out += (x === "1" && y === "1") ? "1" : "0";
+      else if (n.op === "OR") out += (x === "0" && y === "0") ? "0" : "1";
+      else out += (x !== y) ? "1" : "0";
+    }
+    if (steps) steps.push([bsRender(n), out]);
+    return out;
+  }
+
+  function bsBuild(rng, vars, ops, useShifts) {
+    let tree = { t: "var", name: rng.pick(vars) };
+    for (let i = 0; i < ops; i++) {
+      if (rng.float() < 0.5) {
+        const other = { t: "var", name: rng.pick(vars) };
+        const op = rng.pick(BS_BIN);
+        tree = rng.float() < 0.5
+          ? { t: "bin", op: op, left: tree, right: other }
+          : { t: "bin", op: op, left: other, right: tree };
+      } else if (useShifts && rng.float() < 0.6) {
+        tree = { t: "un", op: rng.pick(BS_SHIFT), child: tree, n: rng.int(1, 3) };
+      } else {
+        tree = { t: "un", op: "NOT", child: tree, n: 0 };
+      }
+    }
+    return tree;
+  }
+
+  function bsNodes(n, out) {
+    out = out || [];
+    out.push(n);
+    if (n.t === "un") bsNodes(n.child, out);
+    if (n.t === "bin") { bsNodes(n.left, out); bsNodes(n.right, out); }
+    return out;
+  }
+
+  function bsSwap(tree, target, replacement) {
+    if (tree === target) return replacement;
+    if (tree.t === "un") {
+      return { t: "un", op: tree.op, n: tree.n, child: bsSwap(tree.child, target, replacement) };
+    }
+    if (tree.t === "bin") {
+      return {
+        t: "bin", op: tree.op,
+        left: bsSwap(tree.left, target, replacement),
+        right: bsSwap(tree.right, target, replacement)
+      };
+    }
+    return tree;
+  }
+
+  // Every way a student could plausibly misread one node.
+  function bsMutations(n) {
+    const out = [];
+    const copy = (over) => Object.assign({}, n, over);
+    if (n.t === "un") {
+      if (n.op === "LSHIFT" || n.op === "RSHIFT") {
+        out.push([copy({ op: n.op === "LSHIFT" ? "LCIRC" : "RCIRC" }), "wrapped bits around instead of discarding them"]);
+        out.push([copy({ op: n.op === "LSHIFT" ? "RSHIFT" : "LSHIFT" }), "shifted in the wrong direction"]);
+      }
+      if (n.op === "LCIRC" || n.op === "RCIRC") {
+        out.push([copy({ op: n.op === "LCIRC" ? "LSHIFT" : "RSHIFT" }), "discarded bits instead of wrapping them around"]);
+        out.push([copy({ op: n.op === "LCIRC" ? "RCIRC" : "LCIRC" }), "circulated in the wrong direction"]);
+      }
+      if (BS_SHIFT.indexOf(n.op) !== -1) out.push([copy({ n: n.n + 1 }), "shifted one position too far"]);
+      if (n.op === "NOT") out.push([copy({ op: "ID" }), "skipped the NOT"]);
+    }
+    if (n.t === "bin") {
+      if (n.op === "XOR") out.push([copy({ op: "OR" }), "treated XOR as OR (1 XOR 1 is 0, not 1)"]);
+      if (n.op === "OR") out.push([copy({ op: "XOR" }), "treated OR as XOR"]);
+      if (n.op === "AND") out.push([copy({ op: "OR" }), "treated AND as OR"]);
+    }
+    return out;
+  }
+
+  function bsGenerate(rng, opts) {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const vars = ["A", "B", "C"].slice(0, opts.nVars);
+      const env = {};
+      vars.forEach((v) => {
+        let s = "";
+        for (let i = 0; i < opts.length; i++) s += rng.pick(["0", "1"]);
+        env[v] = s;
+      });
+
+      const tree = bsBuild(rng, vars, opts.ops, true);
+      const answer = bsEval(tree, env);
+      const nodes = bsNodes(tree);
+
+      if (nodes.some((n) => n.t === "bin" && bsRender(n.left) === bsRender(n.right))) continue;
+      if (new Set(answer.split("")).size === 1) continue;
+
+      // Break one node, re-evaluate the whole tree.
+      let cands = [];
+      nodes.forEach((node) => {
+        bsMutations(node).forEach((m) => cands.push([node, m[0], m[1]]));
+      });
+      cands = rng.shuffle(cands);
+
+      const seen = { [answer]: true };
+      const distractors = [];
+      for (const c of cands) {
+        const value = bsEval(bsSwap(tree, c[0], c[1]), env);
+        if (seen[value]) continue;
+        seen[value] = true;
+        distractors.push([value, c[2]]);
+        if (distractors.length === 3) break;
+      }
+      if (distractors.length < 3) continue;
+
+      const used = nodes.filter((n) => n.t === "var").map((n) => n.name);
+      const given = vars.filter((v) => used.indexOf(v) !== -1)
+        .map((v) => v + " = " + env[v]).join(", ");
+
+      const steps = [];
+      bsEval(tree, env, steps);
+
+      return {
+        prompt: "If " + given + ", evaluate:",
+        expr: bsRender(tree),
+        answer: answer,
+        distractors: distractors,
+        working: vars.filter((v) => used.indexOf(v) !== -1).map((v) => [v, env[v]]).concat(steps)
+      };
+    }
+    return null;
+  }
+
+  /* ============================================================
+     Prefix / Infix / Postfix Notation
+     ============================================================ */
+
+  const NT_PREC = { "+": 1, "-": 1, "*": 2, "/": 2, "^": 3 };
+  const NT_OPS = ["+", "-", "*", "/"];
+  const NT_COMMUTATIVE = ["+", "*"];
+  const OP_NAMES = {
+    "+": "addition", "-": "subtraction", "*": "multiplication",
+    "/": "division", "^": "exponentiation"
+  };
+
+  function ntPostfix(n) {
+    if (n.t === "leaf") return n.sym;
+    return ntPostfix(n.left) + ntPostfix(n.right) + n.op;
+  }
+
+  function ntPrefix(n) {
+    if (n.t === "leaf") return n.sym;
+    return n.op + ntPrefix(n.left) + ntPrefix(n.right);
+  }
+
+  function ntInfix(n, parentOp, isRight) {
+    if (n.t === "leaf") return n.sym;
+    const text = ntInfix(n.left, n.op, false) + " " + n.op + " " + ntInfix(n.right, n.op, true);
+    if (!parentOp) return text;
+    const p = NT_PREC[n.op], pp = NT_PREC[parentOp];
+    if (p < pp) return "(" + text + ")";
+    if (p === pp) {
+      const rightAssoc = parentOp === "^";
+      if (rightAssoc ? !isRight : isRight) return "(" + text + ")";
+    }
+    return text;
+  }
+
+  function ntEval(n) {
+    if (n.t === "leaf") return /^[0-9]+$/.test(n.sym) ? parseInt(n.sym, 10) : null;
+    const a = ntEval(n.left), b = ntEval(n.right);
+    if (a === null || b === null) return null;
+    if (n.op === "+") return a + b;
+    if (n.op === "-") return a - b;
+    if (n.op === "*") return a * b;
+    if (n.op === "^") return (b < 0 || b > 4) ? null : Math.pow(a, b);
+    if (b === 0 || a % b !== 0) return null;
+    return a / b;
+  }
+
+  function ntNodes(n, out) {
+    out = out || [];
+    out.push(n);
+    if (n.t === "node") { ntNodes(n.left, out); ntNodes(n.right, out); }
+    return out;
+  }
+
+  function ntGraft(tree, target, replacement) {
+    if (tree === target) return replacement;
+    if (tree.t === "node") {
+      return {
+        t: "node", op: tree.op,
+        left: ntGraft(tree.left, target, replacement),
+        right: ntGraft(tree.right, target, replacement)
+      };
+    }
+    return tree;
+  }
+
+  function ntMirror(n) {
+    if (n.t === "leaf") return n;
+    return { t: "node", op: n.op, left: ntMirror(n.right), right: ntMirror(n.left) };
+  }
+
+  function dropParen(s) {
+    const i = s.indexOf("(");
+    if (i < 0) return null;
+    let depth = 0;
+    for (let j = i; j < s.length; j++) {
+      if (s[j] === "(") depth++;
+      else if (s[j] === ")") {
+        depth--;
+        if (depth === 0) return s.slice(0, i) + s.slice(i + 1, j) + s.slice(j + 1);
+      }
+    }
+    return null;
+  }
+
+  function ntBuild(rng, ops, leaves, allowPow) {
+    let nodes = leaves.map((s) => ({ t: "leaf", sym: s }));
+    const opSet = allowPow ? NT_OPS.concat(["^"]) : NT_OPS;
+    for (let i = 0; i < ops; i++) {
+      const a = nodes.splice(rng.int(0, nodes.length - 1), 1)[0];
+      const b = nodes.splice(rng.int(0, nodes.length - 1), 1)[0];
+      nodes.push({ t: "node", op: rng.pick(opSet), left: a, right: b });
+    }
+    while (nodes.length > 1) {
+      const b = nodes.pop(), a = nodes.pop();
+      nodes.push({ t: "node", op: rng.pick(opSet), left: a, right: b });
+    }
+    return nodes[0];
+  }
+
+  // Every way a student could plausibly mishandle one operator.
+  function ntTreeMistakes(node) {
+    const out = [];
+    const swapped = { t: "node", op: node.op, left: node.right, right: node.left };
+    out.push([swapped, NT_COMMUTATIVE.indexOf(node.op) !== -1
+      ? "took the operands in right-to-left order"
+      : "reversed the operands of the " + OP_NAMES[node.op]]);
+
+    const r = node.right;
+    if (r.t === "node" && NT_PREC[r.op] === NT_PREC[node.op]) {
+      out.push([{ t: "node", op: r.op,
+        left: { t: "node", op: node.op, left: node.left, right: r.left },
+        right: r.right }, "applied left-associativity where the expression groups to the right"]);
+    }
+    const l = node.left;
+    if (l.t === "node" && NT_PREC[l.op] === NT_PREC[node.op]) {
+      out.push([{ t: "node", op: l.op, left: l.left,
+        right: { t: "node", op: node.op, left: l.right, right: node.right } },
+        "grouped from the right where the operators associate left"]);
+    }
+    return out;
+  }
+
+  const NT_RENDER = { in2post: ntPostfix, in2pre: ntPrefix, post2in: (t) => ntInfix(t, null, false) };
+
+  function ntCandidates(tree, qtype) {
+    const render = NT_RENDER[qtype];
+    const out = [];
+    ntNodes(tree).forEach((node) => {
+      if (node.t !== "node") return;
+      ntTreeMistakes(node).forEach((m) => {
+        const broken = ntGraft(tree, node, m[0]);
+        if (qtype === "evalpost") {
+          const v = ntEval(broken);
+          if (v !== null) out.push([String(v), m[1]]);
+        } else {
+          out.push([render(broken), m[1]]);
+        }
+      });
+    });
+
+    if (qtype === "in2post") {
+      out.push([ntPrefix(tree), "gave the prefix form when postfix was asked"]);
+      out.push([ntPostfix(tree).split("").reverse().join(""), "wrote the postfix string in reverse order"]);
+    } else if (qtype === "in2pre") {
+      out.push([ntPostfix(tree), "gave the postfix form when prefix was asked"]);
+      out.push([ntPrefix(tree).split("").reverse().join(""), "wrote the prefix string in reverse order"]);
+    } else if (qtype === "post2in") {
+      out.push([ntInfix(ntMirror(tree), null, false), "read the postfix operands right-to-left"]);
+      const dropped = dropParen(ntInfix(tree, null, false));
+      if (dropped) out.push([dropped, "dropped a parenthesis the grouping requires"]);
+    } else {
+      const v = ntEval(ntMirror(tree));
+      if (v !== null) out.push([String(v), "took every operand pair in reverse order"]);
+    }
+    return out;
+  }
+
+  // Weaker misread-an-operator slips, used only when the principled
+  // mistakes collide and can't fill three distinct choices.
+  function ntBackfill(tree, qtype) {
+    const render = NT_RENDER[qtype];
+    const out = [];
+    if (qtype === "evalpost") {
+      const v = ntEval(tree);
+      if (v !== null) {
+        out.push([String(v + 1), "slipped one too high in the arithmetic"]);
+        out.push([String(v - 1), "slipped one too low in the arithmetic"]);
+      }
+    }
+    ntNodes(tree).forEach((node) => {
+      if (node.t !== "node") return;
+      NT_OPS.forEach((op) => {
+        if (op === node.op) return;
+        const broken = ntGraft(tree, node, { t: "node", op: op, left: node.left, right: node.right });
+        const tag = "misread the " + OP_NAMES[node.op] + " as " + OP_NAMES[op];
+        if (qtype === "evalpost") {
+          const v = ntEval(broken);
+          if (v !== null) out.push([String(v), tag]);
+        } else {
+          out.push([render(broken), tag]);
+        }
+      });
+    });
+    return out;
+  }
+
+  function ntGenerate(rng, opts) {
+    const QTYPES = ["in2post", "in2pre", "post2in", "evalpost"];
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const qtype = rng.pick(QTYPES);
+      const nLeaves = opts.ops + 1;
+      let leaves;
+      if (qtype === "evalpost") {
+        leaves = [];
+        for (let i = 0; i < nLeaves; i++) leaves.push(String(rng.int(1, 9)));
+      } else {
+        leaves = rng.sample("ABCDEFGH".split(""), nLeaves).map(
+          (s) => (rng.float() < 0.8 ? s : String(rng.int(2, 9)))
+        );
+      }
+
+      const tree = ntBuild(rng, opts.ops, leaves, opts.allowPow && qtype !== "evalpost");
+      const infix = ntInfix(tree, null, false);
+      if (qtype !== "evalpost" && !opts.useParens && infix.indexOf("(") !== -1) continue;
+
+      let built;
+      if (qtype === "evalpost") {
+        const value = ntEval(tree);
+        if (value === null || value < 0 || value > 200) continue;
+        built = {
+          prompt: "Evaluate this postfix expression:",
+          expr: ntPostfix(tree),
+          answer: String(value),
+          working: ntEvalWorking(tree)
+        };
+      } else if (qtype === "post2in") {
+        built = {
+          prompt: "Convert this postfix expression to infix, using only the parentheses you need:",
+          expr: ntPostfix(tree),
+          answer: infix,
+          working: ntWorking(tree, "postfix").map((p) => [p[1], p[0]])
+        };
+      } else if (qtype === "in2post") {
+        built = {
+          prompt: "Convert this infix expression to postfix:",
+          expr: infix,
+          answer: ntPostfix(tree),
+          working: ntWorking(tree, "postfix")
+        };
+      } else {
+        built = {
+          prompt: "Convert this infix expression to prefix:",
+          expr: infix,
+          answer: ntPrefix(tree),
+          working: ntWorking(tree, "prefix")
+        };
+      }
+
+      const pool = rng.shuffle(ntCandidates(tree, qtype)).concat(rng.shuffle(ntBackfill(tree, qtype)));
+      const seen = { [built.answer]: true };
+      const distractors = [];
+      for (const c of pool) {
+        if (!c[0] || seen[c[0]]) continue;
+        seen[c[0]] = true;
+        distractors.push(c);
+        if (distractors.length === 3) break;
+      }
+      if (distractors.length < 3) continue;
+
+      built.distractors = distractors;
+      return built;
+    }
+    return null;
+  }
+
+  function ntWorking(n, form) {
+    const lines = [];
+    (function walk(node) {
+      if (node.t === "leaf") return;
+      walk(node.left);
+      walk(node.right);
+      lines.push([ntInfix(node, null, false), form === "prefix" ? ntPrefix(node) : ntPostfix(node)]);
+    })(n);
+    return lines;
+  }
+
+  function ntEvalWorking(n) {
+    const lines = [];
+    (function walk(node) {
+      if (node.t === "leaf") return;
+      walk(node.left);
+      walk(node.right);
+      lines.push([ntPostfix(node), String(ntEval(node))]);
+    })(n);
+    return lines;
+  }
+
+  /* ============================================================
+     Computer Number Systems
+     ============================================================ */
+
+  const DIGITS = "0123456789ABCDEF";
+  const BASES = [2, 8, 10, 16];
+
+  function toBase(n, b) {
+    if (n === 0) return "0";
+    let out = "";
+    while (n > 0) { out = DIGITS[n % b] + out; n = Math.floor(n / b); }
+    return out;
+  }
+
+  function fromBase(s, b) {
+    let v = 0;
+    for (const c of s) {
+      const d = DIGITS.indexOf(c);
+      if (d < 0 || d >= b) return null;
+      v = v * b + d;
+    }
+    return v;
+  }
+
+  function stripZeros(s) { return s.replace(/^0+/, "") || "0"; }
+
+  function addDroppingCarries(xs, ys, b) {
+    const w = Math.max(xs.length, ys.length);
+    xs = xs.padStart(w, "0"); ys = ys.padStart(w, "0");
+    let out = "";
+    for (let i = 0; i < w; i++) {
+      out += DIGITS[(DIGITS.indexOf(xs[i]) + DIGITS.indexOf(ys[i])) % b];
+    }
+    return stripZeros(out);
+  }
+
+  function subBorrowAsCarry(xs, ys, b) {
+    const w = Math.max(xs.length, ys.length);
+    xs = xs.padStart(w, "0"); ys = ys.padStart(w, "0");
+    let out = "", borrow = 0;
+    for (let i = w - 1; i >= 0; i--) {
+      let d = DIGITS.indexOf(xs[i]) - DIGITS.indexOf(ys[i]) + borrow;
+      borrow = 0;
+      if (d < 0) { d += b; borrow = 1; }
+      out = DIGITS[((d % b) + b) % b] + out;
+    }
+    return stripZeros(out);
+  }
+
+  function shiftHexLetter(s, rng) {
+    const idxs = [];
+    for (let i = 0; i < s.length; i++) if ("ABCDEF".indexOf(s[i]) !== -1) idxs.push(i);
+    if (!idxs.length) return null;
+    const i = rng.pick(idxs);
+    let nv = DIGITS.indexOf(s[i]) + rng.pick([-1, 1]);
+    if (nv > 15) nv = 14;
+    if (nv < 0) nv = 1;
+    return s.slice(0, i) + DIGITS[nv] + s.slice(i + 1);
+  }
+
+  function conversionItem(rng, opts) {
+    const pair = rng.sample(opts.bases, 2);
+    const fromB = pair[0], toB = pair[1];
+    const value = rng.int(Math.max(fromB, toB), opts.magnitude);
+    const src = toBase(value, fromB);
+    const answer = toBase(value, toB);
+
+    const cands = [];
+    BASES.forEach((wb) => {
+      if (wb === fromB || wb === toB) return;
+      const tag = (wb === 8 && ((fromB === 2 && toB === 16) || (fromB === 16 && toB === 2)))
+        ? "converted through the wrong intermediate base (grouped bits in threes, giving octal)"
+        : "converted correctly, but to base " + wb + " instead of base " + toB;
+      cands.push([toBase(value, wb), tag]);
+      const misread = fromBase(src, wb);
+      if (misread !== null && misread !== value) {
+        const cand = toBase(misread, toB);
+        if (Math.abs(cand.length - answer.length) <= 2) {
+          cands.push([cand, "read the given number as if it were base " + wb]);
+        }
+      }
+    });
+    if (answer.length > 1) cands.push([answer.split("").reverse().join(""), "reversed the digit order"]);
+    const shifted = shiftHexLetter(answer, rng);
+    if (shifted) cands.push([shifted, "mapped a hex letter off by one (D read as 12)"]);
+
+    const expansion = src.split("")
+      .map((c, i) => DIGITS.indexOf(c) + "x" + fromB + "^" + (src.length - 1 - i)).join(" + ");
+    const working = [["expand in base " + fromB, expansion], ["base 10", String(value)]];
+    let n = value;
+    const divs = [];
+    while (n > 0) {
+      divs.push([n + " / " + toB, Math.floor(n / toB) + " remainder " + DIGITS[n % toB]]);
+      n = Math.floor(n / toB);
+    }
+    divs.reverse();
+
+    return {
+      prompt: "Convert " + src + " (base " + fromB + ") to base " + toB + ".",
+      expr: null,
+      answer: answer,
+      candidates: cands,
+      working: working.concat(divs, [["read remainders upward", answer]])
+    };
+  }
+
+  function arithmeticItem(rng, opts) {
+    const nonDecimal = opts.bases.filter((b) => b !== 10);
+    const b = rng.pick(nonDecimal.length ? nonDecimal : [2, 8, 16]);
+    const op = rng.pick(["+", "-", "*"]);
+    let x, y;
+    if (op === "*") {
+      const hi = Math.max(4, Math.floor(Math.sqrt(opts.magnitude)));
+      x = rng.int(2, hi); y = rng.int(2, hi);
+    } else {
+      x = rng.int(b, opts.magnitude); y = rng.int(2, opts.magnitude);
+      if (op === "-" && x < y) { const t = x; x = y; y = t; }
+    }
+    const value = op === "+" ? x + y : op === "-" ? x - y : x * y;
+    if (value <= 0) return null;
+
+    const xs = toBase(x, b), ys = toBase(y, b);
+    const answer = toBase(value, b);
+
+    const cands = [];
+    if (op === "+") cands.push([addDroppingCarries(xs, ys, b), "dropped a carry"]);
+    if (op === "-") cands.push([subBorrowAsCarry(xs, ys, b), "treated a subtraction borrow as a carry"]);
+    const fx = fromBase(xs, 10), fy = fromBase(ys, 10);
+    if (fx !== null && fy !== null) {
+      const dec = op === "+" ? fx + fy : op === "-" ? fx - fy : fx * fy;
+      if (dec > 0) cands.push([String(dec), "did the column arithmetic in base 10"]);
+    }
+    cands.push([String(value), "computed correctly but left the answer in base 10"]);
+    if (answer.length > 1) cands.push([answer.split("").reverse().join(""), "reversed the digit order"]);
+    const shifted = shiftHexLetter(answer, rng);
+    if (shifted) cands.push([shifted, "mapped a hex letter off by one (D read as 12)"]);
+    cands.push([toBase(value + 1, b), "slipped one too high in the last column"]);
+    if (value > 1) cands.push([toBase(value - 1, b), "slipped one too low in the last column"]);
+
+    return {
+      prompt: "Working entirely in base " + b + ", compute:",
+      expr: xs + " " + op + " " + ys,
+      answer: answer,
+      candidates: cands,
+      working: [
+        [xs + " (base " + b + ")", String(x) + " (base 10)"],
+        [ys + " (base " + b + ")", String(y) + " (base 10)"],
+        [String(x) + " " + op + " " + String(y), String(value) + " (base 10)"],
+        [String(value) + " back to base " + b, answer]
+      ]
+    };
+  }
+
+  function twosComplementItem(rng, opts) {
+    const width = rng.pick([8, 8, 16]);
+    const limit = Math.pow(2, width - 1) - 1;
+    const v = rng.int(1, Math.min(limit, Math.max(3, opts.magnitude)));
+    const plain = toBase(v, 2).padStart(width, "0");
+    const flipped = plain.split("").map((c) => (c === "0" ? "1" : "0")).join("");
+    const bits = toBase(Math.pow(2, width) - v, 2).padStart(width, "0");
+
+    if (rng.float() < 0.5) {
+      return {
+        prompt: "Express " + (-v) + " as a " + width + "-bit two's complement binary number.",
+        expr: null,
+        answer: bits,
+        candidates: [
+          [flipped, "stopped at the one's complement and never added 1"],
+          [plain, "wrote the magnitude and ignored the sign"],
+          [toBase(Math.pow(2, width) - v - 1, 2).padStart(width, "0"), "added 1 in the wrong direction"],
+          [bits.split("").reverse().join(""), "reversed the bit order"]
+        ],
+        working: [
+          [String(v) + " in " + width + " bits", plain],
+          ["invert every bit", flipped],
+          ["add 1", bits]
+        ]
+      };
+    }
+
+    return {
+      prompt: "Interpret this " + width + "-bit two's complement number as a decimal integer:",
+      expr: bits,
+      answer: String(-v),
+      candidates: [
+        [String(v), "ignored the sign bit"],
+        [String(fromBase(bits, 2)), "read the pattern as an unsigned binary number"],
+        [String(-(v + 1)), "forgot to add 1 after inverting"],
+        [String(-(v - 1) || -1), "slipped one in the final step"]
+      ],
+      working: [
+        ["leading bit is 1", "the value is negative"],
+        ["invert every bit", flipped],
+        ["add 1", plain],
+        ["read as decimal, then negate", String(-v)]
+      ]
+    };
+  }
+
+  function numbersGenerate(rng, opts) {
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const roll = rng.float();
+      let built;
+      if (opts.twos && roll < 0.25) built = twosComplementItem(rng, opts);
+      else if (roll < 0.6) built = arithmeticItem(rng, opts);
+      else built = conversionItem(rng, opts);
+      if (!built) continue;
+
+      const seen = { [built.answer]: true };
+      const distractors = [];
+      for (const c of rng.shuffle(built.candidates)) {
+        if (!c[0] || seen[c[0]]) continue;
+        seen[c[0]] = true;
+        distractors.push(c);
+        if (distractors.length === 3) break;
+      }
+      if (distractors.length < 3) continue;
+
+      delete built.candidates;
+      built.distractors = distractors;
+      return built;
+    }
+    return null;
+  }
+
+  /* ============================================================
+     Registry
+     ============================================================ */
+
+  const CATEGORIES = {
+    notation: {
+      label: "Prefix / Infix / Postfix Notation",
+      settings: (d) => ({ ops: d === 1 ? 2 : d === 2 ? 3 : 5, useParens: d > 1, allowPow: d === 3 }),
+      generate: ntGenerate
+    },
+    numbers: {
+      label: "Computer Number Systems",
+      settings: (d) => ({
+        magnitude: d === 1 ? 63 : d === 2 ? 255 : 4095,
+        bases: d === 1 ? [2, 8, 10] : BASES,
+        twos: d > 1
+      }),
+      generate: numbersGenerate
+    },
+    bits: {
+      label: "Bit-String Flicking",
+      settings: (d) => ({
+        length: d === 1 ? 5 : d === 2 ? 8 : 12,
+        ops: d === 1 ? 2 : d === 2 ? 3 : 5,
+        nVars: d === 1 ? 2 : 3
+      }),
+      generate: bsGenerate
+    }
+  };
+
+  const LETTERS = "ABCD";
+
+  function makeProblem(key, difficulty, seed) {
+    const cat = CATEGORIES[key];
+    const opts = cat.settings(difficulty);
+    for (let bump = 0; bump < 40; bump++) {
+      const item = cat.generate(rngFrom(seed + bump * 7919), opts);
+      if (!item) continue;
+      item.category = cat.label;
+      item.seed = seed;
+      // Option order is derived from the item itself, so a regenerated
+      // worksheet always matches its key.
+      const order = rngFrom(hashString("choices:" + seed + ":" + item.answer))
+        .shuffle([item.answer].concat(item.distractors.map((d) => d[0])));
+      item.choices = order;
+      item.correctLetter = LETTERS[order.indexOf(item.answer)];
+      item.tagFor = (choice) => {
+        const hit = item.distractors.filter((d) => d[0] === choice)[0];
+        return hit ? hit[1] : null;
+      };
+      return item;
+    }
+    return null;
+  }
+
+  /* ============================================================
+     Practice
+     ============================================================ */
+
+  const $ = (id) => document.getElementById(id);
+
+  let current = null;
+  let picked = null;
+  let answered = false;
+  let shownAt = 0;
+  let right = 0, total = 0;
+
+  function renderProblem() {
+    const key = $("p-category").value;
+    const difficulty = parseInt($("p-difficulty").value, 10);
+    current = makeProblem(key, difficulty, (Math.random() * 2147483647) >>> 0);
+    picked = null;
+    answered = false;
+
+    const stem = $("p-stem");
+    stem.textContent = "";
+    const box = $("p-choices");
+    box.textContent = "";
+
+    if (!current) {
+      stem.textContent = "No problem at this difficulty.";
+      return;
+    }
+
+    stem.appendChild(document.createTextNode(current.prompt));
+    if (current.expr) {
+      const b = document.createElement("span");
+      b.className = "stem-expr";
+      b.textContent = current.expr;
+      stem.appendChild(b);
+    }
+
+    current.choices.forEach((choice, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "choice";
+      btn.setAttribute("aria-pressed", "false");
+      btn.dataset.value = choice;
+
+      const letter = document.createElement("span");
+      letter.className = "choice-letter";
+      letter.textContent = LETTERS[i];
+      const value = document.createElement("span");
+      value.className = "choice-value";
+      value.textContent = choice;
+
+      btn.appendChild(letter);
+      btn.appendChild(value);
+      btn.addEventListener("click", () => pick(choice, btn));
+      box.appendChild(btn);
+    });
+
+    setPrimary("Check");
+    $("p-result").hidden = true;
+    shownAt = Date.now();
+  }
+
+  function pick(choice, btn) {
+    if (answered) return;
+    picked = choice;
+    Array.prototype.forEach.call($("p-choices").children, (el) => {
+      el.setAttribute("aria-pressed", String(el === btn));
+    });
+  }
+
+  // Fade the label out, swap it, fade back in.
+  function setPrimary(label) {
+    const btn = $("p-primary");
+    if (btn.textContent === label) return;
+    btn.classList.add("swapping");
+    window.setTimeout(() => {
+      btn.textContent = label;
+      btn.classList.remove("swapping");
+    }, 130);
+  }
+
+  function checkAnswer() {
+    if (!current || answered || picked === null) return;
+    answered = true;
+
+    const ok = picked === current.answer;
+    total += 1;
+    if (ok) right += 1;
+
+    Array.prototype.forEach.call($("p-choices").children, (el) => {
+      el.disabled = true;
+      if (el.dataset.value === current.answer) el.classList.add("is-right");
+      else if (el.dataset.value === picked) el.classList.add("is-wrong");
+    });
+
+    const tag = ok ? null : current.tagFor(picked);
+    const verdict = $("p-verdict");
+    verdict.textContent = ok ? "Correct" : (tag ? "You " + tag : "Not quite");
+    verdict.className = ok ? "verdict verdict-right" : "verdict verdict-wrong";
+
+    const box = $("p-working");
+    box.textContent = "";
+    const head = document.createElement("p");
+    head.className = "working-head";
+    head.textContent = "working";
+    box.appendChild(head);
+    current.working.forEach((pair) => {
+      const line = document.createElement("p");
+      line.className = "working-line";
+      line.textContent = pair[0] + "   =   " + pair[1];
+      box.appendChild(line);
+    });
+
+    $("p-result").hidden = false;
+    $("p-score").textContent = right + " / " + total;
+    logAnswer(current, picked, tag, ok, (Date.now() - shownAt) / 1000);
+    setPrimary("Next problem");
+  }
+
+  $("p-primary").addEventListener("click", () => {
+    if (answered) renderProblem(); else checkAnswer();
+  });
+  $("p-skip").addEventListener("click", renderProblem);
+  $("p-category").addEventListener("change", renderProblem);
+  $("p-difficulty").addEventListener("change", renderProblem);
+
+  /* ============================================================
+     Session log
+     ============================================================ */
+
+  const LOG_KEY = "acsl-session-v2";
+  let session = null;
+
+  function freshSession() {
+    return { id: Date.now().toString(36), entries: [] };
+  }
+
+  function loadSession() {
+    try {
+      const raw = window.localStorage.getItem(LOG_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.entries)) return parsed;
+      }
+    } catch (e) { /* blocked storage: fall through */ }
+    return freshSession();
+  }
+
+  function saveSession() {
+    try { window.localStorage.setItem(LOG_KEY, JSON.stringify(session)); }
+    catch (e) { /* still works in memory */ }
+  }
+
+  function logAnswer(item, choice, tag, correct, seconds) {
+    session.entries.push({
+      category: item.category,
+      expr: item.expr || item.prompt,
+      picked: choice,
+      answer: item.answer,
+      tag: tag,
+      correct: correct,
+      seconds: Math.round(seconds * 10) / 10
+    });
+    saveSession();
+  }
+
+  function renderSession() {
+    const body = $("s-body");
+    body.textContent = "";
+    if (!session.entries.length) { $("s-note").textContent = ""; return; }
+
+    const order = Object.keys(CATEGORIES).map((k) => CATEGORIES[k].label);
+    const byCat = {};
+    session.entries.forEach((e) => { (byCat[e.category] = byCat[e.category] || []).push(e); });
+
+    order.filter((label) => byCat[label]).forEach((label) => {
+      const rows = byCat[label];
+      const good = rows.filter((r) => r.correct).length;
+
+      const block = document.createElement("div");
+      block.className = "cat-block";
+
+      const head = document.createElement("div");
+      head.className = "cat-head";
+      const name = document.createElement("span");
+      name.textContent = label;
+      const tally = document.createElement("span");
+      tally.className = "cat-tally";
+      tally.textContent = good + " / " + rows.length;
+      head.appendChild(name);
+      head.appendChild(tally);
+      block.appendChild(head);
+
+      // Group the misses by the misconception behind them.
+      const tags = {};
+      rows.filter((r) => !r.correct).forEach((r) => {
+        const k = r.tag || "no tag";
+        tags[k] = (tags[k] || 0) + 1;
+      });
+      Object.keys(tags).sort((a, b) => tags[b] - tags[a]).forEach((k) => {
+        const row = document.createElement("div");
+        row.className = "miss";
+        const t = document.createElement("span");
+        t.className = "miss-tag";
+        t.textContent = k;
+        const n = document.createElement("span");
+        n.className = "miss-right";
+        n.textContent = tags[k] + "x";
+        row.appendChild(t);
+        row.appendChild(n);
+        block.appendChild(row);
+      });
+
+      body.appendChild(block);
+    });
+
+    const good = session.entries.filter((e) => e.correct).length;
+    $("s-note").textContent = good + " / " + session.entries.length;
+  }
+
+  $("s-new").addEventListener("click", () => {
+    session = freshSession();
+    saveSession();
+    right = 0; total = 0;
+    $("p-score").textContent = "0 / 0";
+    renderSession();
+  });
+
+  /* ============================================================
+     Worksheets
+     ============================================================ */
+
+  function randomSeed() { return 1 + Math.floor(Math.random() * 999999); }
+
+  // Auto seed holds steady so Preview shows the set Download will produce;
+  // it rolls over after each save.
+  let autoSeed = randomSeed();
+
+  function buildPlan() {
+    const keys = Array.prototype.slice
+      .call(document.querySelectorAll("#panel-sheets .checks input:checked"))
+      .map((el) => el.value);
+    if (!keys.length) return null;
+
+    const nStudents = Math.min(40, Math.max(1, parseInt($("w-students").value, 10) || 1));
+    const nProblems = Math.min(20, Math.max(1, parseInt($("w-problems").value, 10) || 1));
+    const difficulty = parseInt($("w-difficulty").value, 10);
+    // Empty field means auto; anything typed wins.
+    const typed = parseInt($("w-seed").value, 10);
+    const master = isNaN(typed) ? autoSeed : Math.max(1, Math.min(999999, typed));
+
+    const students = [];
+    for (let s = 0; s < nStudents; s++) {
+      const studentSeed = (mulberry32(master + s * 104729)() * 2147483647) >>> 0;
+      const problems = [];
+      for (let p = 0; p < nProblems; p++) {
+        const item = makeProblem(keys[p % keys.length], difficulty, (studentSeed + p * 2654435761) >>> 0);
+        if (item) problems.push(item);
+      }
+      students.push({ index: s + 1, seed: studentSeed, problems: problems });
+    }
+    return { title: $("w-title").value || "ACSL Practice", seed: master, students: students };
+  }
+
+  /* ---- Minimal PDF writer: base-14 fonts, uncompressed ASCII streams ----
+     Everything emitted here is ASCII, so string offsets are byte offsets
+     and the xref table stays correct.                                    */
+
+  const INK = "0.11 0.11 0.10";
+  const MUTED = "0.42 0.41 0.38";
+  const RULE = "0.87 0.85 0.81";
+  const ACCENT = "0.70 0.23 0.20";
+
+  function pdfEscape(s) {
+    return String(s)
+      .replace(/[^\x20-\x7E]/g, "?")
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)");
+  }
+
+  function PdfDoc() { this.pages = []; this.ops = null; this.y = 0; }
+
+  PdfDoc.prototype.addPage = function () {
+    this.ops = [];
+    this.pages.push(this.ops);
+    this.y = 738;
+  };
+
+  PdfDoc.prototype.text = function (str, x, size, font, rgb) {
+    this.ops.push(
+      "BT " + (rgb || INK) + " rg /" + (font || "F1") + " " + size + " Tf 1 0 0 1 " +
+      x + " " + this.y + " Tm (" + pdfEscape(str) + ") Tj ET"
+    );
+  };
+
+  PdfDoc.prototype.line = function (x1, x2, rgb, w) {
+    this.ops.push((w || 0.75) + " w " + (rgb || RULE) + " RG " +
+      x1 + " " + this.y + " m " + x2 + " " + this.y + " l S");
+  };
+
+  PdfDoc.prototype.vline = function (x, yTop, yBottom, rgb, w) {
+    this.ops.push((w || 1.5) + " w " + (rgb || ACCENT) + " RG " +
+      x + " " + yTop + " m " + x + " " + yBottom + " l S");
+  };
+
+  PdfDoc.prototype.space = function (dy) { this.y -= dy; };
+  PdfDoc.prototype.room = function (need) { return this.y - need > 56; };
+
+  PdfDoc.prototype.wrap = function (str, size, font, maxWidth) {
+    const per = (font === "F3" ? 0.60 : 0.50) * size;
+    const max = Math.max(8, Math.floor(maxWidth / per));
+    const words = String(str).split(/\s+/);
+    const lines = [];
+    let line = "";
+    words.forEach((w) => {
+      const next = line ? line + " " + w : w;
+      if (next.length > max && line) { lines.push(line); line = w; }
+      else line = next;
+    });
+    if (line) lines.push(line);
+    return lines;
+  };
+
+  PdfDoc.prototype.build = function () {
+    const objs = [];
+    const push = (body) => { objs.push(body); return objs.length; };
+
+    const contentIds = [];
+    this.pages.forEach((ops) => {
+      const stream = ops.join("\n");
+      contentIds.push(push("<< /Length " + stream.length + " >>\nstream\n" + stream + "\nendstream"));
+    });
+
+    const fontHelv = push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+    const fontBold = push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+    const fontMono = push("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>");
+
+    const pagesId = objs.length + this.pages.length + 1;
+    const pageIds = this.pages.map((ops, i) => push(
+      "<< /Type /Page /Parent " + pagesId + " 0 R /MediaBox [0 0 612 792] " +
+      "/Resources << /Font << /F1 " + fontHelv + " 0 R /F2 " + fontBold + " 0 R /F3 " + fontMono + " 0 R >> >> " +
+      "/Contents " + contentIds[i] + " 0 R >>"
+    ));
+
+    push("<< /Type /Pages /Count " + pageIds.length +
+      " /Kids [" + pageIds.map((id) => id + " 0 R").join(" ") + "] >>");
+    const catalogId = push("<< /Type /Catalog /Pages " + pagesId + " 0 R >>");
+
+    let out = "%PDF-1.4\n";
+    const offsets = [0];
+    objs.forEach((body, i) => {
+      offsets.push(out.length);
+      out += (i + 1) + " 0 obj\n" + body + "\nendobj\n";
+    });
+
+    const xrefAt = out.length;
+    out += "xref\n0 " + (objs.length + 1) + "\n0000000000 65535 f \n";
+    for (let i = 1; i <= objs.length; i++) {
+      out += String(offsets[i]).padStart(10, "0") + " 00000 n \n";
+    }
+    out += "trailer\n<< /Size " + (objs.length + 1) + " /Root " + catalogId + " 0 R >>\n" +
+           "startxref\n" + xrefAt + "\n%%EOF\n";
+    return out;
+  };
+
+  function renderPdf(plan) {
+    const doc = new PdfDoc();
+    const L = 56, R = 556, WIDTH = R - L;
+
+    function masthead(title, seed) {
+      doc.text(title, L, 16, "F2");
+      if (seed !== null) doc.text("seed " + seed, R - 96, 8, "F3", MUTED);
+      doc.space(11);
+      doc.line(L, R, ACCENT, 1.5);
+    }
+
+    plan.students.forEach((student) => {
+      doc.addPage();
+      masthead(plan.title, student.seed);
+      doc.space(30);
+      doc.text("Name", L, 9, "F1", MUTED);
+      doc.text("Date", L + 320, 9, "F1", MUTED);
+      doc.space(13);
+      doc.line(L + 34, L + 300);
+      doc.line(L + 352, R);
+      doc.space(34);
+
+      student.problems.forEach((item, i) => {
+        const head = doc.wrap(item.prompt, 10.5, "F1", WIDTH - 22);
+        const exprLines = item.expr ? doc.wrap(item.expr, 11, "F3", WIDTH - 40) : [];
+        const need = head.length * 15 + exprLines.length * 16 + item.choices.length * 15 + 34;
+
+        if (!doc.room(need)) {
+          doc.addPage();
+          masthead(plan.title + " (continued)", student.seed);
+          doc.space(30);
+        }
+
+        doc.text(String(i + 1) + ".", L, 10.5, "F2");
+        head.forEach((ln) => { doc.text(ln, L + 22, 10.5, "F1"); doc.space(15); });
+
+        if (exprLines.length) {
+          doc.space(6);
+          const top = doc.y + 11;
+          exprLines.forEach((ln) => { doc.text(ln, L + 38, 11, "F3"); doc.space(16); });
+          doc.vline(L + 24, top, doc.y + 12);
+        }
+
+        doc.space(6);
+        item.choices.forEach((choice, k) => {
+          doc.text("(" + LETTERS[k] + ")", L + 24, 9.5, "F1", MUTED);
+          doc.text(choice, L + 54, 10, "F3");
+          doc.space(15);
+        });
+        doc.space(18);
+      });
+    });
+
+    doc.addPage();
+    masthead(plan.title + "  Answer Key", null);
+    doc.space(30);
+
+    plan.students.forEach((student) => {
+      const need = 30 + student.problems.length * 13;
+      if (!doc.room(need)) {
+        doc.addPage();
+        masthead(plan.title + "  Answer Key (continued)", null);
+        doc.space(30);
+      }
+      doc.text("Student " + student.index, L, 10.5, "F2");
+      doc.text("seed " + student.seed, R - 96, 8, "F3", MUTED);
+      doc.space(7);
+      doc.line(L, R);
+      doc.space(15);
+      student.problems.forEach((item, i) => {
+        doc.text(String(i + 1) + ".", L + 6, 9.5, "F1", MUTED);
+        doc.text("(" + item.correctLetter + ")  " + item.answer, L + 30, 10, "F3");
+        doc.space(13);
+      });
+      doc.space(20);
+    });
+
+    return doc.build();
+  }
+
+  let downloads = null;
+
+  $("w-preview").addEventListener("click", () => {
+    const plan = buildPlan();
+    const box = $("w-previewbox");
+    box.textContent = "";
+    if (!plan) { $("w-note").textContent = "Pick a category"; box.hidden = true; return; }
+    $("w-note").textContent = "seed " + plan.seed;
+
+    const student = plan.students[0];
+    const head = document.createElement("p");
+    head.className = "working-head";
+    head.textContent = "student 1";
+    box.appendChild(head);
+    student.problems.forEach((item, i) => {
+      const line = document.createElement("p");
+      line.className = "working-line";
+      line.textContent = (i + 1) + ". " + item.prompt + (item.expr ? "   " + item.expr : "");
+      box.appendChild(line);
+    });
+    box.hidden = false;
+  });
+
+  $("w-download").addEventListener("click", async () => {
+    const plan = buildPlan();
+    if (!plan) { $("w-note").textContent = "Pick a category"; return; }
+    if (!downloads) { $("w-note").textContent = "Saving unavailable"; return; }
+
+    const btn = $("w-download");
+    btn.disabled = true;
+    $("w-note").textContent = "seed " + plan.seed;
+
+    try {
+      await downloads.save({
+        filename: plan.title.replace(/[^A-Za-z0-9]+/g, "-").toLowerCase() + "-" + plan.seed + ".pdf",
+        data: renderPdf(plan)
+      });
+      if (!$("w-seed").value.trim()) autoSeed = randomSeed(); // next auto set differs
+    } catch (err) {
+      const code = err && err.code;
+      $("w-note").textContent =
+        code === "declined" ? "Cancelled"
+        : code === "too_large" ? "Too large"
+        : code === "rate_limited" ? "Prompt already open"
+        : code === "extension_not_enabled" || code === "rejected_extension" ? "PDF saving unavailable"
+        : "Couldn't save";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  /* ============================================================
+     Nav
+     ============================================================ */
+
+  const TABS = ["practice", "sheets", "session"];
+  const PANEL = { practice: "panel-practice", sheets: "panel-sheets", session: "panel-session" };
+
+  function selectTab(which) {
+    TABS.forEach((name) => {
+      const on = name === which;
+      $("tab-" + name).setAttribute("aria-selected", String(on));
+      $(PANEL[name]).hidden = !on;
+    });
+    if (which === "session") renderSession();
+  }
+
+  // Rolls the seed but leaves the field on auto, so the box stays empty.
+  $("w-reseed").addEventListener("click", () => {
+    autoSeed = randomSeed();
+    $("w-seed").value = "";
+    $("w-note").textContent = "seed " + autoSeed;
+  });
+
+  TABS.forEach((name) => $("tab-" + name).addEventListener("click", () => selectTab(name)));
+
+  $("info-btn").addEventListener("click", () => {
+    const open = $("info-btn").getAttribute("aria-expanded") === "true";
+    $("info-btn").setAttribute("aria-expanded", String(!open));
+    $("info-panel").hidden = open;
+  });
+
+  $("w-download").disabled = true;
+  if (window.claude && window.claude.use) {
+    window.claude.use("downloads").then((ns) => {
+      downloads = ns;
+      $("w-download").disabled = !ns;
+      if (!ns) $("w-note").textContent = "Saving unavailable";
+    }).catch(() => { $("w-download").disabled = true; });
+  } else {
+    $("w-note").textContent = "Saving unavailable";
+  }
+
+  session = loadSession();
+  right = session.entries.filter((e) => e.correct).length;
+  total = session.entries.length;
+  $("p-score").textContent = right + " / " + total;
+  renderProblem();
+})();
+</script>
