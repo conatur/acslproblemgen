@@ -249,6 +249,37 @@
 
   .score { font-family: var(--font-mono); font-size: 0.82em; color: var(--muted); }
 
+  /* --- Session, folded into Practice so it stays out of the way --- */
+
+  .session { border-top: 1px solid var(--rule); padding-top: 14px; }
+
+  .session > summary {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    list-style: none;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    color: var(--muted);
+  }
+
+  .session > summary::-webkit-details-marker { display: none; }
+
+  .session > summary::before { content: "\25B8"; font-size: 0.9em; }
+  .session[open] > summary::before { content: "\25BE"; }
+
+  .session > summary:hover { color: var(--ink); }
+  .session-label { letter-spacing: 0.02em; }
+
+  .session-body { display: flex; flex-direction: column; gap: 22px; padding: 20px 0 4px; }
+
+  .session-start { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+  .session-start .field { flex: none; }
+  #s-count { width: 12ch; }
+
+  .session-done { font-family: var(--font-mono); font-size: 0.95em; color: var(--good); }
+
   /* --- Worksheets --- */
 
   .group { display: flex; flex-direction: column; gap: 14px; }
@@ -344,7 +375,6 @@
   <div class="tabs" role="tablist">
     <button type="button" class="tab" id="tab-practice" role="tab" aria-selected="true" aria-controls="panel-practice">Practice</button>
     <button type="button" class="tab" id="tab-sheets" role="tab" aria-selected="false" aria-controls="panel-sheets">Worksheets</button>
-    <button type="button" class="tab" id="tab-session" role="tab" aria-selected="false" aria-controls="panel-session">Session</button>
   </div>
 
   <hr>
@@ -386,7 +416,22 @@
       <div class="working" id="p-working"></div>
     </div>
 
-    <p class="score" id="p-score">0 / 0</p>
+    <details class="session" id="p-session">
+      <summary>
+        <span class="session-label">session</span>
+        <span class="score" id="p-score">0 / 0</span>
+      </summary>
+      <div class="session-body">
+        <div class="session-start">
+          <div class="field">
+            <label for="s-count">questions</label>
+            <input type="number" id="s-count" min="1" max="100" placeholder="unlimited">
+          </div>
+          <button type="button" class="btn btn-quiet" id="s-new">Start</button>
+        </div>
+        <div id="s-body"></div>
+      </div>
+    </details>
   </section>
 
   <section class="panel" id="panel-sheets" role="tabpanel" aria-labelledby="tab-sheets" hidden>
@@ -444,14 +489,6 @@
     <p class="note" id="w-note"></p>
 
     <div class="working" id="w-previewbox" hidden></div>
-  </section>
-
-  <section class="panel" id="panel-session" role="tabpanel" aria-labelledby="tab-session" hidden>
-    <div id="s-body"></div>
-    <div class="row-actions">
-      <button type="button" class="btn btn-quiet" id="s-new">New session</button>
-    </div>
-    <p class="note" id="s-note"></p>
   </section>
 
 </main>
@@ -1291,7 +1328,10 @@
       box.appendChild(btn);
     });
 
-    setPrimary("Check");
+    // A finished session shows its last problem but won't take another answer.
+    const done = sessionDone();
+    setPrimary(done ? "New session" : "Check");
+    $("p-skip").disabled = done;
     $("p-result").hidden = true;
     shownAt = Date.now();
   }
@@ -1316,7 +1356,7 @@
   }
 
   function checkAnswer() {
-    if (!current || answered || picked === null) return;
+    if (!current || answered || picked === null || sessionDone()) return;
     answered = true;
 
     const ok = picked === current.answer;
@@ -1348,13 +1388,28 @@
     });
 
     $("p-result").hidden = false;
-    $("p-score").textContent = right + " / " + total;
     logAnswer(current, picked, tag, ok, (Date.now() - shownAt) / 1000);
-    setPrimary("Next problem");
+    updateScore();
+
+    if (sessionDone()) {
+      const good = session.entries.filter((e) => e.correct).length;
+      const done = document.createElement("p");
+      done.className = "session-done";
+      done.textContent = "Session complete — " + good + " / " + session.target;
+      $("p-working").appendChild(done);
+      $("p-skip").disabled = true;
+      renderSession();
+      $("p-session").open = true;
+      setPrimary("New session");
+    } else {
+      setPrimary("Next problem");
+    }
   }
 
   $("p-primary").addEventListener("click", () => {
-    if (answered) renderProblem(); else checkAnswer();
+    if (sessionDone()) startSession();
+    else if (answered) renderProblem();
+    else checkAnswer();
   });
   $("p-skip").addEventListener("click", renderProblem);
   $("p-category").addEventListener("change", renderProblem);
@@ -1367,8 +1422,21 @@
   const LOG_KEY = "acsl-session-v2";
   let session = null;
 
-  function freshSession() {
-    return { id: Date.now().toString(36), entries: [] };
+  // target === null means an open-ended session.
+  function freshSession(target) {
+    return { id: Date.now().toString(36), target: target || null, entries: [] };
+  }
+
+  function sessionDone() {
+    return session.target !== null && session.entries.length >= session.target;
+  }
+
+  function updateScore() {
+    const answered = session.entries.length;
+    const good = session.entries.filter((e) => e.correct).length;
+    $("p-score").textContent = session.target
+      ? good + " / " + answered + " of " + session.target
+      : good + " / " + answered;
   }
 
   function loadSession() {
@@ -1376,7 +1444,10 @@
       const raw = window.localStorage.getItem(LOG_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.entries)) return parsed;
+        if (parsed && Array.isArray(parsed.entries)) {
+          if (parsed.target === undefined) parsed.target = null;  // pre-target session
+          return parsed;
+        }
       }
     } catch (e) { /* blocked storage: fall through */ }
     return freshSession();
@@ -1403,7 +1474,8 @@
   function renderSession() {
     const body = $("s-body");
     body.textContent = "";
-    if (!session.entries.length) { $("s-note").textContent = ""; return; }
+    updateScore();
+    if (!session.entries.length) return;
 
     const order = Object.keys(CATEGORIES).map((k) => CATEGORIES[k].label);
     const byCat = {};
@@ -1450,17 +1522,19 @@
       body.appendChild(block);
     });
 
-    const good = session.entries.filter((e) => e.correct).length;
-    $("s-note").textContent = good + " / " + session.entries.length;
   }
 
-  $("s-new").addEventListener("click", () => {
-    session = freshSession();
+  function startSession() {
+    const n = parseInt($("s-count").value, 10);
+    session = freshSession(isNaN(n) ? null : Math.max(1, Math.min(100, n)));
     saveSession();
     right = 0; total = 0;
-    $("p-score").textContent = "0 / 0";
     renderSession();
-  });
+    $("p-session").open = false;
+    renderProblem();
+  }
+
+  $("s-new").addEventListener("click", startSession);
 
   /* ============================================================
      Worksheets
@@ -1735,8 +1809,8 @@
      Nav
      ============================================================ */
 
-  const TABS = ["practice", "sheets", "session"];
-  const PANEL = { practice: "panel-practice", sheets: "panel-sheets", session: "panel-session" };
+  const TABS = ["practice", "sheets"];
+  const PANEL = { practice: "panel-practice", sheets: "panel-sheets" };
 
   function selectTab(which) {
     TABS.forEach((name) => {
@@ -1744,8 +1818,11 @@
       $("tab-" + name).setAttribute("aria-selected", String(on));
       $(PANEL[name]).hidden = !on;
     });
-    if (which === "session") renderSession();
   }
+
+  $("p-session").addEventListener("toggle", () => {
+    if ($("p-session").open) renderSession();
+  });
 
   // Rolls the seed but leaves the field on auto, so the box stays empty.
   $("w-reseed").addEventListener("click", () => {
@@ -1774,9 +1851,10 @@
   }
 
   session = loadSession();
+  if (session.target) $("s-count").value = session.target;
   right = session.entries.filter((e) => e.correct).length;
   total = session.entries.length;
-  $("p-score").textContent = right + " / " + total;
+  updateScore();
   renderProblem();
 })();
 </script>
