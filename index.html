@@ -475,7 +475,8 @@
     </div>
 
     <div class="row-actions">
-      <button type="button" class="btn" id="w-download">Download PDF</button>
+      <button type="button" class="btn" id="w-download">Download worksheets</button>
+      <button type="button" class="btn" id="w-key">Download answer key</button>
       <button type="button" class="btn btn-quiet" id="w-preview">Preview</button>
     </div>
 
@@ -1582,6 +1583,11 @@
       x + " " + yTop + " m " + x + " " + yBottom + " l S");
   };
 
+  // Filled block, used to flag the correct option on the key.
+  PdfDoc.prototype.rect = function (x, w, h, rgb) {
+    this.ops.push((rgb || ACCENT) + " rg " + x + " " + this.y + " " + w + " " + h + " re f");
+  };
+
   PdfDoc.prototype.space = function (dy) { this.y -= dy; };
   PdfDoc.prototype.room = function (need) { return this.y - need > 56; };
 
@@ -1642,37 +1648,57 @@
     return out;
   };
 
-  function renderPdf(plan) {
+  /* One layout, two documents. The key mirrors the worksheet page for page;
+     where the student sheet leaves blank space to work in, the key puts the
+     derivation for that problem. */
+  function renderPdf(plan, key) {
     const doc = new PdfDoc();
     const L = 56, R = 556, WIDTH = R - L;
+    const WORK_SPACE = 74;              // blank room on the student sheet
 
-    function masthead(title, seed) {
-      doc.text(title, L, 16, "F2");
-      if (seed !== null) doc.text("seed " + seed, R - 96, 8, "F3", MUTED);
+    function masthead(student, continued) {
+      doc.text(plan.title + (key ? "  Answer Key" : ""), L, 16, "F2");
+      doc.text("seed " + student.seed, R - 96, 8, "F3", MUTED);
       doc.space(11);
       doc.line(L, R, ACCENT, 1.5);
+      doc.space(30);
+      if (continued) return;
+
+      if (key) {
+        doc.text("Student " + student.index, L, 10, "F2");
+        doc.space(13);
+        doc.line(L, R);
+      } else {
+        doc.text("Name", L, 9, "F1", MUTED);
+        doc.text("Date", L + 320, 9, "F1", MUTED);
+        doc.space(13);
+        doc.line(L + 34, L + 300);
+        doc.line(L + 352, R);
+      }
+      doc.space(34);
     }
 
     plan.students.forEach((student) => {
       doc.addPage();
-      masthead(plan.title, student.seed);
-      doc.space(30);
-      doc.text("Name", L, 9, "F1", MUTED);
-      doc.text("Date", L + 320, 9, "F1", MUTED);
-      doc.space(13);
-      doc.line(L + 34, L + 300);
-      doc.line(L + 352, R);
-      doc.space(34);
+      masthead(student, false);
 
       student.problems.forEach((item, i) => {
         const head = doc.wrap(item.prompt, 10.5, "F1", WIDTH - 22);
         const exprLines = item.expr ? doc.wrap(item.expr, 11, "F3", WIDTH - 40) : [];
-        const need = head.length * 15 + exprLines.length * 16 + item.choices.length * 15 + 34;
+
+        // The key's steps replace the worksheet's blank space.
+        const steps = key
+          ? item.working.map((p) => doc.wrap(p[0] + "   =   " + p[1], 8.5, "F3", WIDTH - 66))
+          : [];
+        const stepCount = steps.reduce((a, lines) => a + lines.length, 0);
+
+        const need = head.length * 15 + exprLines.length * 16
+          + item.choices.length * 15
+          + (key ? stepCount * 11 + 30 : WORK_SPACE) + 20;
 
         if (!doc.room(need)) {
           doc.addPage();
-          masthead(plan.title + " (continued)", student.seed);
-          doc.space(30);
+          masthead(student, true);
         }
 
         doc.text(String(i + 1) + ".", L, 10.5, "F2");
@@ -1687,36 +1713,25 @@
 
         doc.space(6);
         item.choices.forEach((choice, k) => {
-          doc.text("(" + LETTERS[k] + ")", L + 24, 9.5, "F1", MUTED);
+          const right = key && LETTERS[k] === item.correctLetter;
+          if (right) doc.rect(L + 12, 5, 5, ACCENT);   // marks the answer
+          doc.text("(" + LETTERS[k] + ")", L + 24, 9.5, right ? "F2" : "F1", right ? INK : MUTED);
           doc.text(choice, L + 54, 10, "F3");
           doc.space(15);
         });
-        doc.space(18);
-      });
-    });
 
-    doc.addPage();
-    masthead(plan.title + "  Answer Key", null);
-    doc.space(30);
-
-    plan.students.forEach((student) => {
-      const need = 30 + student.problems.length * 13;
-      if (!doc.room(need)) {
-        doc.addPage();
-        masthead(plan.title + "  Answer Key (continued)", null);
-        doc.space(30);
-      }
-      doc.text("Student " + student.index, L, 10.5, "F2");
-      doc.text("seed " + student.seed, R - 96, 8, "F3", MUTED);
-      doc.space(7);
-      doc.line(L, R);
-      doc.space(15);
-      student.problems.forEach((item, i) => {
-        doc.text(String(i + 1) + ".", L + 6, 9.5, "F1", MUTED);
-        doc.text("(" + item.correctLetter + ")  " + item.answer, L + 30, 10, "F3");
-        doc.space(13);
+        if (key) {
+          doc.space(10);
+          doc.text("working", L + 24, 8, "F1", MUTED);
+          doc.space(12);
+          steps.forEach((lines) => {
+            lines.forEach((ln) => { doc.text(ln, L + 24, 8.5, "F3", MUTED); doc.space(11); });
+          });
+          doc.space(14);
+        } else {
+          doc.space(WORK_SPACE);
+        }
       });
-      doc.space(20);
     });
 
     return doc.build();
@@ -1764,20 +1779,23 @@
     box.hidden = false;
   });
 
-  $("w-download").addEventListener("click", async () => {
+  // The seed deliberately does not roll here: the key has to be generated
+  // from the same seed as the worksheets or it won't match them. Use the
+  // reseed button for a new set.
+  async function download(key) {
     const plan = buildPlan();
     if (!plan) { $("w-note").textContent = "Pick a category"; return; }
 
-    const btn = $("w-download");
+    const btn = key ? $("w-key") : $("w-download");
     btn.disabled = true;
     $("w-note").textContent = "seed " + plan.seed;
 
     try {
+      const stem = plan.title.replace(/[^A-Za-z0-9]+/g, "-").toLowerCase();
       await savePdf(
-        plan.title.replace(/[^A-Za-z0-9]+/g, "-").toLowerCase() + "-" + plan.seed + ".pdf",
-        renderPdf(plan)
+        stem + "-" + plan.seed + (key ? "-key" : "") + ".pdf",
+        renderPdf(plan, key)
       );
-      if (!$("w-seed").value.trim()) autoSeed = randomSeed(); // next auto set differs
     } catch (err) {
       const code = err && err.code;
       $("w-note").textContent =
@@ -1789,7 +1807,10 @@
     } finally {
       btn.disabled = false;
     }
-  });
+  }
+
+  $("w-download").addEventListener("click", () => download(false));
+  $("w-key").addEventListener("click", () => download(true));
 
   /* ============================================================
      Nav
@@ -1829,9 +1850,11 @@
   // the capability, and only give up if it never arrives.
   if (inViewer) {
     $("w-download").disabled = true;
+    $("w-key").disabled = true;
     window.claude.use("downloads").then((ns) => {
       downloads = ns;
       $("w-download").disabled = !ns;
+      $("w-key").disabled = !ns;
       if (!ns) $("w-note").textContent = "Saving unavailable";
     }).catch(() => { $("w-note").textContent = "Saving unavailable"; });
   }
