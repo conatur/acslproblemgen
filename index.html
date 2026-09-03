@@ -1367,10 +1367,6 @@
 
     const box = $("p-working");
     box.textContent = "";
-    const head = document.createElement("p");
-    head.className = "working-head";
-    head.textContent = "working";
-    box.appendChild(head);
     current.working.forEach((pair) => {
       const line = document.createElement("p");
       line.className = "working-line";
@@ -1694,7 +1690,7 @@
 
         const need = head.length * 15 + exprLines.length * 16
           + item.choices.length * 15
-          + (key ? stepCount * 11 + 30 : WORK_SPACE) + 20;
+          + (key ? stepCount * 11 + 28 : WORK_SPACE) + 20;
 
         if (!doc.room(need)) {
           doc.addPage();
@@ -1721,9 +1717,7 @@
         });
 
         if (key) {
-          doc.space(10);
-          doc.text("working", L + 24, 8, "F1", MUTED);
-          doc.space(12);
+          doc.space(14);
           steps.forEach((lines) => {
             lines.forEach((ln) => { doc.text(ln, L + 24, 8.5, "F3", MUTED); doc.space(11); });
           });
