@@ -4,25 +4,12 @@
 
 <style>
   :root {
-    /* Five dark grounds, each meant to carry white text. The ramp runs
-       indigo -> purple -> plum -> wine -> rust; the three middle steps
-       identify the three categories, rust marks a wrong answer. */
-    color-scheme: dark;
-
-    --bg:      #222872;
-    --surface: #3c1f63;
-    --plum:    #6b245e;
-    --wine:    #7a2943;
-    --rust:    #7a1e0a;
-
-    /* Right and wrong stay conventional green/red rather than being forced
-       into the ramp — pitched dark and saturated to sit with it. */
-    --good:   #1f7a4f;
-    --bad:    #8f2018;
-
-    --ink:    #ffffff;
-    --muted:  rgba(255, 255, 255, 0.64);
-    --rule:   rgba(255, 255, 255, 0.22);
+    --bg:     #F7F5EF;
+    --ink:    #1C1B19;
+    --accent: #B33A32;
+    --good:   #3F6B4A;
+    --muted:  #6B6862;
+    --rule:   #DDD9CE;
 
     --font-display: "Newsreader", Georgia, "Times New Roman", serif;
     --font-body:    "IBM Plex Sans", Helvetica, Arial, sans-serif;
@@ -83,9 +70,8 @@
   .info-btn:hover, .info-btn[aria-expanded="true"] { color: var(--ink); border-color: var(--muted); }
 
   .info-panel {
-    background: var(--rust);
-    border-left: 2px solid var(--ink);
-    padding: 14px 20px;
+    border-left: 2px solid var(--accent);
+    padding: 2px 0 2px 20px;
     margin: 0 0 22px;
     max-width: 62ch;
   }
@@ -114,16 +100,15 @@
     font-family: var(--font-mono);
     font-size: 0.95em;
     line-height: 1.5;
-    color: var(--ink);
+    color: var(--accent);
     background: transparent;
-    border: 1px solid var(--ink);
+    border: 1px solid var(--accent);
     border-radius: 0;
     padding: 8px 18px;
     cursor: pointer;
   }
 
-  /* On a dark ground the strongest emphasis available is inversion. */
-  .btn:hover:not(:disabled) { background: var(--ink); color: var(--bg); }
+  .btn:hover:not(:disabled) { color: #8F2E27; border-color: #8F2E27; }
   .btn:disabled { color: var(--muted); border-color: var(--rule); cursor: default; }
 
   .btn-quiet { color: var(--ink); border-color: var(--rule); }
@@ -138,7 +123,7 @@
     font-size: 0.95em;
     line-height: 1.5;
     color: var(--ink);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--bg);
     border: 1px solid var(--rule);
     border-radius: 0;
     padding: 8px 10px;
@@ -174,16 +159,11 @@
 
   /* --- Problem --- */
 
-  /* The stem block carries the category's colour from the ramp. */
   .stem-box {
-    background: var(--surface);
-    border-left: 2px solid var(--ink);
-    padding: 16px 20px;
+    border-left: 2px solid var(--accent);
+    padding-left: 20px;
     overflow-x: auto;
   }
-
-  .stem-box[data-cat="numbers"] { background: var(--plum); }
-  .stem-box[data-cat="bits"]    { background: var(--wine); }
 
   .stem {
     font-family: var(--font-mono);
@@ -217,27 +197,27 @@
   }
 
   .choice:hover:not(:disabled) { border-color: var(--muted); }
-  .choice[aria-pressed="true"] { border-color: var(--ink); background: rgba(255, 255, 255, 0.09); }
+  .choice[aria-pressed="true"] { border-color: var(--ink); }
   .choice:disabled { cursor: default; }
 
   .choice-letter { color: var(--muted); }
   .choice[aria-pressed="true"] .choice-letter { color: var(--ink); }
 
   .choice.is-right {
-    background: var(--good);
     border-color: var(--good);
+    background: rgba(63, 107, 74, 0.07);
     animation: pop 320ms ease-out;
   }
 
   .choice.is-right .choice-letter,
-  .choice.is-right .choice-value { color: var(--ink); font-weight: 600; }
+  .choice.is-right .choice-value { color: var(--good); font-weight: 600; }
 
   .choice.is-wrong {
-    background: var(--bad);
-    border-color: var(--bad);
+    border-color: var(--accent);
+    background: rgba(179, 58, 50, 0.05);
   }
 
-  .choice.is-wrong .choice-letter, .choice.is-wrong .choice-value { color: var(--ink); }
+  .choice.is-wrong .choice-letter, .choice.is-wrong .choice-value { color: var(--accent); }
 
   @keyframes pop {
     0%   { transform: scale(1); }
@@ -253,15 +233,9 @@
     margin-top: 6px;
   }
 
-  .verdict {
-    display: inline-block;
-    font-family: var(--font-mono);
-    font-size: 0.95em;
-    padding: 4px 11px;
-  }
-
-  .verdict-right { background: var(--good); color: var(--ink); }
-  .verdict-wrong { background: var(--bad); color: var(--ink); }
+  .verdict { font-family: var(--font-mono); font-size: 0.95em; }
+  .verdict-right { color: var(--good); }
+  .verdict-wrong { color: var(--accent); }
 
   .working {
     display: flex;
@@ -327,7 +301,7 @@
     font-size: 0.95em;
   }
 
-  .check input { accent-color: var(--plum); }
+  .check input { accent-color: var(--accent); }
 
   .row-actions {
     display: flex;
@@ -363,17 +337,16 @@
     gap: 3px 18px;
     font-family: var(--font-mono);
     font-size: 0.88em;
-    padding: 3px 0 3px 11px;
-    border-left: 2px solid var(--bad);
+    padding: 3px 0;
   }
 
-  .miss-tag { color: var(--ink); }
+  .miss-tag { color: var(--accent); }
   .miss-right { color: var(--muted); }
 
-  a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
-  a:hover { text-decoration-thickness: 2px; }
+  a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  a:hover { color: #8F2E27; }
 
-  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   @media (prefers-reduced-motion: reduce) {
     .choice, .btn-swap { transition: none; }
@@ -426,7 +399,7 @@
       </div>
     </div>
 
-    <div class="stem-box" id="p-stembox" data-cat="notation">
+    <div class="stem-box">
       <div class="stem" id="p-stem"></div>
     </div>
 
@@ -1309,7 +1282,6 @@
     current = makeProblem(key, difficulty, (Math.random() * 2147483647) >>> 0);
     picked = null;
     answered = false;
-    $("p-stembox").dataset.cat = key;   // picks the category colour
 
     const stem = $("p-stem");
     stem.textContent = "";
@@ -1575,7 +1547,7 @@
   const INK = "0.11 0.11 0.10";
   const MUTED = "0.42 0.41 0.38";
   const RULE = "0.87 0.85 0.81";
-  const ACCENT = "0.13 0.16 0.45";   // #222872 — worksheets stay dark-on-white for print
+  const ACCENT = "0.70 0.23 0.20";
 
   function pdfEscape(s) {
     return String(s)
