@@ -1,4 +1,4 @@
-"""ACSL practice trainer.  Run with:  streamlit run app.py"""
+
 import inspect
 import io
 import json
