@@ -1,1 +1,1 @@
-Check out the website: [acslproblemgen](https://conatur.github.io/acslproblemgen/)
+Check out the [website](https://conatur.github.io/acslproblemgen/)
