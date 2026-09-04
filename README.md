@@ -1,4 +1,4 @@
-Check out the [website](https://acslproblemgen-ten.vercel.app/)
+Check out the [website](https://conatur.github.io/acslproblemgen/)
 
 Generates practice problems for the ACSL MCQ categories: Bit-String Flicking,
 Prefix/Infix/Postfix Notation, and Computer Number Systems.
