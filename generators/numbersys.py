@@ -1,10 +1,4 @@
-"""ACSL Number Systems.
 
-Conversions between bases 2, 8, 10, 16, plus add/subtract/multiply carried
-out inside a non-decimal base. Distractors are produced by actually running
-the wrong procedure a student would run (dropping carries, misreading a hex
-letter, ...), never by random perturbation.
-"""
 import random
 
 from items import Item

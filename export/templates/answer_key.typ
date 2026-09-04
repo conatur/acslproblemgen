@@ -1,18 +1,4 @@
-// ACSL practice answer key — the match for worksheet.typ.
-//
-// Deliberately dense: several students per page, each block headed by the
-// same seed printed on that student's worksheet, so a teacher can pair a key
-// block to a sheet at a glance.
-//
-// As in worksheet.typ, every content value arrives pre-escaped from the
-// Python side; this file owns layout only.
-//
-// Data shape:
-//   students: ( (label: content, seed: str, answers: (answer, ...)), ... )
-//   answer:   (letter: content or none, value: content, notes: (note, ...))
-//   note:     (label: content or none, value: content, tag: content)
 
-// One student's block: heading, seed, then a tight numbered answer list.
 #let student-block(student, show-rationale) = {
   block(
     breakable: false,

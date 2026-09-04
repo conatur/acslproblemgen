@@ -1,16 +1,3 @@
-// ACSL practice worksheet — one page (or more) per student.
-//
-// This file owns all worksheet layout. The Python side (export/typst.py)
-// passes structured data only: a title, a list of students, and two display
-// flags. It never builds markup itself.
-//
-// Every content value handed in here has already been through
-// escape_typst() on the Python side, so problem text containing #, $, [, ],
-// *, _ or a backtick arrives as literal characters rather than markup.
-//
-// Data shape:
-//   students: ( (label: content, seed: str, problems: (problem, ...)), ... )
-//   problem:  (prompt: content, expression: content, choices: (content, ...))
 
 #let _seed = state("acsl-seed", "")
 #let _title = state("acsl-title", [])

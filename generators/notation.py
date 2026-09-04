@@ -12,11 +12,6 @@ from items import Item
 
 CATEGORY = "Prefix/Infix/Postfix"
 
-# Infix precedence: higher binds tighter. Operators are rendered as
-# left-associative, and a right-hand child of equal precedence is always
-# parenthesized, so every tree has exactly one infix spelling.
-# TODO: verify this table and the associativity convention against the
-# official ACSL Prefix/Infix/Postfix Notation reference.
 PREC = {"+": 1, "-": 1, "*": 2, "/": 2}
 
 OPS = list(PREC)

@@ -5,10 +5,6 @@ from items import Item
  
 CATEGORY = "Bit-String Flicking"
  
-
-# Precedence for infix rendering: higher binds tighter.
-# TODO: verify this table against the official ACSL Bit-String Flicking
-# reference before trusting rendered groupings.
 PREC = {"OR": 1, "XOR": 2, "AND": 3}
  
 BINARY_OPS = list(PREC)
@@ -174,9 +170,6 @@ def generate(rng=None, length=8, ops=3, n_vars=2, use_shifts=True, seed=None):
         tree = build_tree(rng, var_names, ops, use_shifts)
         answer = evaluate(tree, env)
 
-        # Reject degenerate items: a (B OR B)-style node adds nothing, and an
-        # all-zeros / all-ones answer makes distractors collide and hands the
-        # student a free elimination.
         if any(isinstance(n, Bin) and n.left == n.right for n in all_nodes(tree)):
             continue
         if len(set(answer)) == 1:
@@ -213,12 +206,7 @@ def generate(rng=None, length=8, ops=3, n_vars=2, use_shifts=True, seed=None):
         )
  
     raise RuntimeError("could not build an item; try more ops or a longer string")
- 
- 
 
-# The evaluate() invariants formerly self-tested here now live in
-# tests/test_generators.py.
- 
  
 if __name__ == "__main__":
     rng = random.Random(42)
